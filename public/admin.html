@@ -755,20 +755,13 @@
                 return;
             }
             try {
-                const server = await JciData.usesServer();
-                if (!server) {
-                    loginError.textContent = t('loginServerError');
-                    loginError.hidden = false;
-                    return;
-                }
-                const valid = await JciData.checkAdminToken(val);
-                if (!valid) {
+                const logged = await JciData.loginAdmin(val);
+                if (!logged) {
                     loginError.textContent = t('loginError');
                     loginError.hidden = false;
                     return;
                 }
                 loginError.hidden = true;
-                JciData.setAdminToken(val);
                 loginSection.hidden = true;
                 adminPanel.hidden = false;
                 await updateModeUi();
