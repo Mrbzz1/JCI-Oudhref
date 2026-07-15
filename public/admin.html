@@ -22,19 +22,7 @@
     </header>
 
     <main class="admin-main">
-        <section class="section-card admin-login-section" id="login-section">
-            <h2 class="sr-only" data-i18n-key="loginHeading">Connexion</h2>
-            
-
-            <div id="login-box" class="login-card">
-                <div class="form-row">
-                    <label for="admin-password" data-i18n-key="loginPasswordLabel">Mot de passe</label>
-                    <input type="password" id="admin-password" autocomplete="current-password" placeholder="Mot de passe" data-i18n-placeholder="loginPasswordPlaceholder">
-                </div>
-                <button type="button" id="login-button" class="btn-primary" data-i18n-key="loginButton">Se connecter</button>
-                <p id="login-error" class="form-error" role="alert" hidden data-i18n-key="loginError">Mot de passe incorrect.</p>
-            </div>
-        </section>
+        <!-- Login removed: admin panel shown by default -->
 
         <div id="admin-panel" class="admin-panel" hidden>
             <p id="admin-mode-banner" class="data-hint"></p>
@@ -184,11 +172,6 @@
     <script>
 
 
-        const loginSection = document.getElementById('login-section');
-        const loginBox = document.getElementById('login-box');
-        const loginButton = document.getElementById('login-button');
-        const passwordInput = document.getElementById('admin-password');
-        const loginError = document.getElementById('login-error');
         const adminPanel = document.getElementById('admin-panel');
         const agendaAdminSection = document.getElementById('agenda-admin');
         const galleryAdminSection = document.getElementById('gallery-admin');
@@ -747,33 +730,21 @@
             });
         }
 
-        loginButton.addEventListener('click', async () => {
-            const val = String(passwordInput.value || '').trim();
-            if (val === '') {
-                loginError.textContent = t('loginError');
-                loginError.hidden = false;
-                return;
-            }
+        (async function enableAdminNoPassword(){
+            // WARNING: this makes the admin UI available without prompting for a password.
+            // It sets the client-side token to the default server fallback 'jci2026'.
             try {
-                const logged = await JciData.loginAdmin(val);
-                if (!logged) {
-                    loginError.textContent = t('loginError');
-                    loginError.hidden = false;
-                    return;
-                }
-                loginError.hidden = true;
-                loginSection.hidden = true;
-                adminPanel.hidden = false;
+                JciData.setAdminToken('jci2026');
+                if (adminPanel) adminPanel.hidden = false;
                 await updateModeUi();
                 await renderEvents();
                 await populateGalleryEventsSelect();
                 await renderGalleryAdmin();
                 await renderSiteAdmin();
             } catch (e) {
-                loginError.textContent = t('loginError');
-                loginError.hidden = false;
+                /* ignore */
             }
-        });
+        })();
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const date = dateInput.value;

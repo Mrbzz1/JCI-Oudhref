@@ -29,14 +29,8 @@
   function getAdminToken() {
     return sessionStorage.getItem('jciAdminToken') || '';
   }
-
-  function authHeaders(token) {
-    const t = token != null ? String(token) : getAdminToken();
-    return t ? { Authorization: 'Bearer ' + t } : {};
-  }
-
   function adminHeaders(json, token) {
-    const h = authHeaders(token);
+    const h = { 'X-Admin-Token': token != null ? String(token) : getAdminToken() };
     if (json) h['Content-Type'] = 'application/json';
     return h;
   }
@@ -47,28 +41,10 @@
     try {
       const r = await fetch('/api/admin/check', {
         method: 'GET',
-        headers: authHeaders(token),
+        headers: adminHeaders(false, token),
         cache: 'no-store'
       });
       return r.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  async function loginAdmin(password) {
-    if (!password || !(await checkApi())) return false;
-    try {
-      const r = await fetch('/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      });
-      if (!r.ok) return false;
-      const data = await r.json();
-      if (!data || !data.token) return false;
-      setAdminToken(data.token);
-      return true;
     } catch {
       return false;
     }
@@ -245,7 +221,7 @@
       }
       const r = await fetch('/api/gallery', {
         method: 'POST',
-        headers: authHeaders(),
+        headers: { 'X-Admin-Token': getAdminToken() },
         body: fd
       });
       if (r.status === 401) throw new Error('auth');
@@ -437,7 +413,7 @@
       fd.append('logo', file);
       const r = await fetch('/api/partners', {
         method: 'POST',
-        headers: authHeaders(),
+        headers: { 'X-Admin-Token': getAdminToken() },
         body: fd
       });
       if (r.status === 401) throw new Error('auth');

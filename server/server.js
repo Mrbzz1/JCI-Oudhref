@@ -1,25 +1,13 @@
-require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const multer = require('multer');
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
 const db = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'jci2026';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
-const JWT_SECRET = process.env.JWT_SECRET || 'dev_jwt_secret';
-
 if (!process.env.ADMIN_TOKEN) {
   console.warn('WARNING: ADMIN_TOKEN is not defined. The admin API will accept the default token jci2026.');
-}
-if (!process.env.ADMIN_PASSWORD_HASH) {
-  console.warn('WARNING: ADMIN_PASSWORD_HASH is not defined. /login will be disabled.');
-}
-if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET is not defined. Using default JWT secret.');
 }
 
 const rootDir = path.join(__dirname, '..');
@@ -37,46 +25,17 @@ function getToken(req) {
   if (auth && /^Bearer\s+/i.test(auth)) return auth.replace(/^Bearer\s+/i, '').trim();
   return '';
 }
-
-function verifyJwt(token) {
-  try {
-    const data = jwt.verify(token, JWT_SECRET);
-    return data && data.admin === true;
-  } catch {
-    return false;
-  }
-}
-
 function requireAdmin(req, res, next) {
   const token = getToken(req);
-  if (token === ADMIN_TOKEN || verifyJwt(token)) {
-    return next();
+  if (token !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: 'Non autorisé' });
   }
-  return res.status(401).json({ error: 'Non autorisé' });
+  next();
 }
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'jci-oudhref' });
 });
-
-app.post('/login', async (req, res) => {
-  const password = String((req.body || {}).password || '');
-  if (!ADMIN_PASSWORD_HASH || !password) {
-    return res.status(401).json({ error: 'Non autorisé' });
-  }
-
-  try {
-    const valid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-    if (!valid) {
-      return res.status(401).json({ error: 'Non autorisé' });
-    }
-    const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '2h' });
-    return res.json({ token });
-  } catch (e) {
-    return res.status(500).json({ error: String(e.message) });
-  }
-});
-
 app.get('/api/site-stats', (req, res) => {
   try {
     const row = db.prepare('SELECT actions, formations, partenariats, updated_at FROM site_stats WHERE id = 1').get();
